@@ -49,11 +49,10 @@ jobs:
       
     - name: Build debug APK
       run: ./gradlew assembleDebug
-      
-    - name: Generate release keystore
+    - name : Generate release key pair
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release-keystore.jks
-      if: secrets.KEYSTORE_BASE64 != ''
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
         
     - name: Build signed release APK
       run: ./gradlew assembleRelease
