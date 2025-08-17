@@ -35,8 +35,7 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
-          
-    - name: Make gradlew executable
+            - name: Make gradlew executable
       run: chmod +x ./gradlew
       
     - name: Run lint
@@ -50,20 +49,30 @@ jobs:
     - name: Build debug APK
       run: ./gradlew assembleDebug
       
-    - name: Build release APK
+    - name: Generate release keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release-keystore.jks
+      if: env.KEYSTORE_BASE64 != ''
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      
+    - name: Build signed release APK
       run: ./gradlew assembleRelease
+      env:
+        SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+        SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
       
     - name: Upload debug APK
       uses: actions/upload-artifact@v4
       with:
         name: debug-apk
         path: app/build/outputs/apk/debug/app-debug.apk
-        
-    - name: Upload release APK
+          - name: Upload release APK
       uses: actions/upload-artifact@v4
       with:
-        name: release-apk
-        path: app/build/outputs/apk/release/app-release-unsigned.apk
+        name: release-apk-signed
+        path: app/build/outputs/apk/release/app-release.apk
         
     - name: Upload lint reports
       uses: actions/upload-artifact@v4
@@ -81,10 +90,9 @@ jobs:
         
     - name: Create GitHub Release
       if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v1
-      with:
+      uses: softprops/action-gh-release@v1      with:
         files: |
           app/build/outputs/apk/debug/app-debug.apk
-          app/build/outputs/apk/release/app-release-unsigned.apk
+          app/build/outputs/apk/release/app-release.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
