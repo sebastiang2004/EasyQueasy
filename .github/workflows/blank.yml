@@ -31,7 +31,8 @@ jobs:
       with:
         path: |
           ~/.gradle/caches
-          ~/.gradle/wrapper        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
           
@@ -52,17 +53,16 @@ jobs:
     - name: Generate release keystore
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release-keystore.jks
-      if: env.KEYSTORE_BASE64 != ''
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-      
+      if: secrets.KEYSTORE_BASE64 != ''
+        
     - name: Build signed release APK
       run: ./gradlew assembleRelease
       env:
         SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-        - name: Upload debug APK
+        
+    - name: Upload debug APK
       uses: actions/upload-artifact@v4
       with:
         name: debug-apk
@@ -87,7 +87,8 @@ jobs:
       with:
         name: test-reports
         path: app/build/reports/tests/
-          - name: Create GitHub Release
+        
+    - name: Create GitHub Release
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
